@@ -6,11 +6,9 @@ Every security layer is structured as an isolated, asynchronous module with a si
 
 ---
 
-## 📖 Academic Paper & Reviewer Guide
+## 📖 Reviewer Guide
 
-This repository contains the companion code and empirical evaluation data for the paper *“Building Safe Agentic AI in Enterprise”*. 
-
-To help reviewers quickly verify our findings and navigate the repository, we have prepared a central research package:
+This repository contains the companion code and empirical evaluation data for *“Building Safe Agentic AI in Enterprise”*. To help reviewers quickly verify the findings and navigate the repository, here is a central research package:
 
 *   **[Research Index & Table of Contents](research/README.md):** The primary entry point linking the formal threat model, baseline comparisons, and related work.
 *   **[Reviewer-Facing Summary Tables](research/evidence_package/evidence_package.md#table-1-baseline-vs-protected-pipeline-summary):** Consolidated baseline-vs-protected comparison tables and attack-family results.
