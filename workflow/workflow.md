@@ -14,6 +14,7 @@ Every message submitted via the Chat console or the `/chat` API endpoint passes 
 ### Diagram
 
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 graph TD
     Client["Client Request (UI/API)"] --> Auth["JWT Auth & Rate Limiter"]
     
@@ -42,6 +43,7 @@ The flowchart below maps the exact, step-by-step logic path of an incoming messa
 
 ### Diagram
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 flowchart TD
     Start([Incoming Client Request]) --> Auth[JWT Authentication & Rate Limiting]
     Auth --> L1{"Layer 1: Input Validator<br/>Regex check"}
@@ -93,6 +95,7 @@ flowchart TD
 
 ### 2.1a – Request Validation Layers:
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 flowchart TD
     Start([Client Request · JWT Authenticated])
     Start --> Auth[JWT Auth & Rate Limiting]
@@ -108,6 +111,7 @@ flowchart TD
 
 ### 2.1b – Request Validation Layers:
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 flowchart TD
     Start([Input Validated · Token Budget Confirmed])
     Start --> L10{L10: Agent Identity\nScope Verification}
@@ -125,6 +129,7 @@ flowchart TD
 
 ### 2.1c – Output Pipeline:
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 flowchart TD
     Start([Hardened Prompt · Ready for LLM Inference])
     Start --> Exec[★ OpenAI LLM Execution]
@@ -155,6 +160,7 @@ Certain operations (such as data deletion or administrative configurations) are 
 
 ### Diagram
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 sequenceDiagram
     autonumber
     actor User as Standard User
@@ -193,6 +199,7 @@ An attacker might probe the API repeatedly, attempting to find a bypass to promp
 
 ### Diagram
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 graph TD
     Request["Incoming User Request"] --> CheckLock{"Is user flagged in Redis?"}
     CheckLock -->|Yes| Lockout["Fast Block (403 Forbidden - Threat Lockout)"]
@@ -220,6 +227,7 @@ RAG is the primary target for indirect prompt injection (e.g. a document contain
 
 ### Diagram
 ```mermaid
+%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
 graph LR
     subgraph Ingestion Pipeline Write
         Doc[File Upload] --> Magic{Magic Bytes MIME Check}
