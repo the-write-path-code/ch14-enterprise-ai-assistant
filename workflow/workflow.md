@@ -14,24 +14,46 @@ Every message submitted via the Chat console or the `/chat` API endpoint passes 
 ### Diagram
 
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
-graph TD
-    Client["Client Request (UI/API)"] --> Auth["JWT Auth & Rate Limiter"]
-    
-    Auth --> PreLLM{"Pre-LLM Checkpoints<br/>(L1: Input Val, L2: Semantic Guard,<br/>L4: Restructurer, L5: Token Budget,<br/>L6: Moderator, L10: Identity,<br/>L12: Threat Monitor)"}
-    PreLLM -->|Violation / Block| Block["Pipeline Block<br/>(Fail Closed)"]
-    PreLLM -->|All Pass| RAG["RAG & Prompt Engineering<br/>(L7: Context Isolator,<br/>L3: Prompt Hardener)"]
-    
-    RAG --> LLM["★ OpenAI LLM Execution"]
-    
-    LLM --> PostLLM{"Post-LLM Checkpoints<br/>(L8: Output Val, L6: Moderator,<br/>L11: Human Gate)"}
-    PostLLM -->|Violation / Block| Block
-    PostLLM -->|Action Gated| Pending["202 Accepted<br/>(Pending Human Gate)"]
-    PostLLM -->|All Pass| Success["200 OK ChatResponse"]
-    
-    Block --> Audit["9. Audit Logger<br/>(audit.jsonl)"]
-    Pending --> Audit
-    Success --> Audit
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "28px", "primaryColor": "#F8FAFC", "primaryBorderColor": "#0284C7", "primaryTextColor": "#000000", "lineColor": "#475569"}}}%%
+flowchart TD
+    Ingress["<div style='min-width: 680px;'><b>Client Request &amp; Authentication</b><br/>POST /chat with Bearer JWT &bull; Quotas &amp; Rate Limits Verified</div>"]
+
+    PreGate["<div style='min-width: 680px;'><b>1. Pre-LLM Security Checkpoints (Fail-Closed Gate)</b><br/>L1: Regex &bull; L2: Semantic Injection &bull; L4: Truncate &gt;4k &bull; L5: Daily Budget<br/>L6: Input Moderator &bull; L10: Agent Scope &bull; L12: Rolling Threat Monitor</div>"]
+    Ingress --> PreGate
+
+    Core["<div style='min-width: 680px;'><b>2. Prompt Hardening &amp; Model Execution Seam</b><br/>L7: Context Isolator (XML wrap) &bull; L3: System Prompt &rarr; <b>★ OpenAI LLM Execution</b></div>"]
+    PreGate -->|"Pass Checkpoints"| Core
+
+    PostGate["<div style='min-width: 680px;'><b>3. Post-LLM Verification &amp; Human Gating</b><br/>L8: Output Schema &bull; L6: Output Moderator &bull; L11: Human Gate (High-Stakes Check)</div>"]
+    Core --> PostGate
+
+    subgraph Outcomes ["4. Terminal Execution &amp; Unconditional Audit Egress"]
+        direction LR
+        Block["<div style='min-width: 200px;'><b>Pipeline Block</b><br/>400/403 Error &bull; Audit log<br/>(Fail Closed)</div>"]
+        Pending["<div style='min-width: 220px;'><b>202 Accepted</b><br/>Gated Token &bull; Audit log<br/>(Pending Approval)</div>"]
+        Success["<div style='min-width: 200px;'><b>200 OK Response</b><br/>Validated output &bull; Audit log<br/>(ChatResponse Delivered)</div>"]
+    end
+
+    PreGate -->|"Pre-LLM Violation"| Block
+    PostGate -->|"Post-LLM Violation"| Block
+    PostGate -->|"Action Gated"| Pending
+    PostGate -->|"All Pass"| Success
+
+    classDef ingress fill:#F8FAFC,stroke:#64748B,color:#000000,stroke-width:1.5px
+    classDef pre fill:#EBF5FF,stroke:#2563EB,color:#000000,stroke-width:1.5px
+    classDef core fill:#FEF3C7,stroke:#D97706,color:#000000,stroke-width:2px
+    classDef post fill:#EDE9FE,stroke:#7C3AED,color:#000000,stroke-width:1.5px
+    classDef block fill:#FEE2E2,stroke:#DC2626,color:#000000,stroke-width:1.5px
+    classDef pending fill:#FEF9C3,stroke:#CA8A04,color:#000000,stroke-width:1.5px
+    classDef success fill:#DCFCE7,stroke:#15803D,color:#000000,stroke-width:1.5px
+
+    class Ingress ingress
+    class PreGate pre
+    class Core core
+    class PostGate post
+    class Block block
+    class Pending pending
+    class Success success
 ```
 
 ---
@@ -111,42 +133,84 @@ flowchart TD
 
 ### 2.1b – Request Validation Layers:
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "28px", "primaryColor": "#F8FAFC", "primaryBorderColor": "#0284C7", "primaryTextColor": "#000000", "lineColor": "#475569"}}}%%
 flowchart TD
-    Start([Input Validated · Token Budget Confirmed])
-    Start --> L10{L10: Agent Identity\nScope Verification}
-    L10 -- Block --> BLK([BLOCKED · Error + Audit])
-    L10 -- Pass --> L6{L6: Content Moderator\nModeration API — Input}
-    L6 -- Block --> BLK
-    L6 -- Pass --> L12{L12: Threat Monitor\nBlock Threshold}
-    L12 -- Lockout --> BLK
-    L12 -- Pass --> RAG{Include RAG Context?}
-    RAG -- Yes --> L7[L7: Context Isolator\nFilter & Wrap Docs]
-    L7 --> L3[L3: System Prompt\nBuild Hardened Prompt]
-    RAG -- No --> L3
-    L3 --> End([Hardened Prompt · Ready for LLM Inference])
+    Start(["<div style='min-width: 480px;'><b>Input Validated &amp; Token Budget Confirmed</b><br/>Passed L1 regex, L2 semantic guard, L4 restructurer, and L5 budget</div>"])
+
+    L10["<div style='min-width: 480px;'><b>1. Layer 10: Agent Identity &amp; Scope Verification</b><br/>Enforces user role against requested agent capability scope</div>"]
+    Start --> L10
+
+    L6["<div style='min-width: 480px;'><b>2. Layer 6: Content Moderator (Input Pass)</b><br/>OpenAI Moderation API checks text for safety &amp; toxicity</div>"]
+    L10 -->|"Scope OK"| L6
+
+    L12["<div style='min-width: 480px;'><b>3. Layer 12: Threat Monitor (Threshold Check)</b><br/>Evaluates rolling 5-minute block score in Redis ZSET</div>"]
+    L6 -->|"Content Clean"| L12
+
+    RAG["<div style='min-width: 480px;'><b>4. RAG Context Isolator &amp; Prompt Hardener</b><br/>&bull; L7: Filter docs by role clearance &amp; wrap in XML isolation tags<br/>&bull; L3: System Prompt builds defensive prompt context</div>"]
+    L12 -->|"Threat Clear"| RAG
+
+    Ready(["<div style='min-width: 480px;'><b>Hardened Prompt &middot; Ready for LLM Inference</b><br/>Model never observes input if any pre-inference gate fails</div>"])
+    RAG --> Ready
+
+    Block["<div style='min-width: 180px;'><b>BLOCKED</b><br/>Immediate Fail-Closed<br/>Error + Audit log</div>"]
+
+    L10 -.->|"Scope Denied"| Block
+    L6 -.->|"Toxic / Flagged"| Block
+    L12 -.->|"Threat Lockout"| Block
+
+    classDef start fill:#E2E8F0,stroke:#475569,color:#000000,stroke-width:1.5px
+    classDef gate fill:#E0F2FE,stroke:#0284C7,color:#000000,stroke-width:1.5px
+    classDef rag fill:#FEF9C3,stroke:#CA8A04,color:#000000,stroke-width:1.5px
+    classDef ready fill:#DCFCE7,stroke:#15803D,color:#000000,stroke-width:1.5px
+    classDef block fill:#FEE2E2,stroke:#DC2626,color:#000000,stroke-width:2px
+
+    class Start start
+    class L10,L6,L12 gate
+    class RAG rag
+    class Ready ready
+    class Block block
 ```
 
 ### 2.1c – Output Pipeline:
 ```mermaid
-%%{init: {"theme": "neutral", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "11px", "actorFontSize": "11px", "noteFontSize": "10px", "messageFontSize": "10px"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, Helvetica, sans-serif", "fontSize": "28px", "primaryColor": "#F8FAFC", "primaryBorderColor": "#0284C7", "primaryTextColor": "#000000", "lineColor": "#475569"}}}%%
 flowchart TD
-    Start([Hardened Prompt · Ready for LLM Inference])
-    Start --> Exec[★ OpenAI LLM Execution]
-    Exec --> L8{L8: Output Validator\nTraceback & JSON Schema}
-    L8 -- Fail/JSON Error --> Retry[Retry Once\nwith Format Reminder]
-    Retry --> L8
-    L8 -- Fail/Block --> ErrResp[Return Error Response]
-    L8 -- Pass --> L6_out{L6: Content Moderator\nModeration API — Output}
-    L6_out -- Block --> ErrResp
-    L6_out -- Pass --> L11{L11: Human Gate\nHigh-Stakes Keyword Check}
-    L11 -- Action Gated --> Pending[Return 202 Accepted\nPending Approval Token]
-    L11 -- Pass --> Budget[Increment Daily Token Usage]
-    Budget --> Success[Return 200 OK Response]
-    ErrResp --> L9[L9: Audit Logger\nUnconditional Log]
-    Pending --> L9
-    Success --> L9
-    L9 --> End([Request Complete · Audit Record Written])
+    Start(["<div style='min-width: 650px;'><b>Hardened Prompt &middot; Ready for LLM Inference</b></div>"])
+    Exec["<div style='min-width: 650px;'><b>★ OpenAI LLM Execution</b><br/>Generates raw text response or structured tool call</div>"]
+    Start --> Exec
+
+    Val["<div style='min-width: 650px;'><b>1. Output Schema Validation &amp; Content Moderation</b><br/>&bull; L8: JSON Schema validation (retries once on parse error; strips tracebacks)<br/>&bull; L6: OpenAI Moderation API scans completion for safety violations</div>"]
+    Exec --> Val
+
+    GateDecision["<div style='min-width: 650px;'><b>2. Layer 11: Human Gate &amp; High-Stakes Inspection</b><br/>Inspects response for high-stakes action verbs (data deletion, privilege changes)</div>"]
+    Val -->|"Schema Valid &amp; Content Clean"| GateDecision
+
+    subgraph Outcomes ["3. Terminal Execution &amp; Unconditional Audit Egress"]
+        direction LR
+        ErrResp["<div style='min-width: 190px;'><b>Error Response</b><br/>400 Bad Request &bull; Audit log<br/>(Fail Closed)</div>"]
+        Pending["<div style='min-width: 220px;'><b>202 Accepted</b><br/>Pending Approval &bull; Audit log<br/>(1-hr TTL in Redis)</div>"]
+        Success["<div style='min-width: 190px;'><b>200 OK Response</b><br/>Tokens logged &bull; Audit log<br/>(ChatResponse Delivered)</div>"]
+    end
+
+    Val -->|"Schema / Content Block"| ErrResp
+    GateDecision -->|"Action Gated"| Pending
+    GateDecision -->|"Standard Action"| Success
+
+    classDef start fill:#E2E8F0,stroke:#475569,color:#000000,stroke-width:1.5px
+    classDef llm fill:#FEF3C7,stroke:#D97706,color:#000000,stroke-width:2px
+    classDef gate fill:#E0F2FE,stroke:#0284C7,color:#000000,stroke-width:1.5px
+    classDef human fill:#EDE9FE,stroke:#7C3AED,color:#000000,stroke-width:1.5px
+    classDef error fill:#FEE2E2,stroke:#DC2626,color:#000000,stroke-width:1.5px
+    classDef pending fill:#FEF9C3,stroke:#CA8A04,color:#000000,stroke-width:1.5px
+    classDef success fill:#DCFCE7,stroke:#15803D,color:#000000,stroke-width:1.5px
+
+    class Start start
+    class Exec llm
+    class Val gate
+    class GateDecision human
+    class ErrResp error
+    class Pending pending
+    class Success success
 ```
 ---
 
