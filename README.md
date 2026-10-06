@@ -6,6 +6,8 @@ SentinelAI is a twelve-layer internal-assistant reference implementation. It dem
 
 The design rule is fail-closed: when a required control cannot make a reliable decision, the request stops. A model refusal is not the safety boundary. The safety boundary is the code that decides whether a request may retrieve data, invoke a tool, return a response, or trigger a downstream action.
 
+For interactive visual walkthroughs of the twelve-layer security pipeline, pre-inference validation gates, post-LLM output verification, cryptographic human-in-the-loop approvals, behavioral threat lockout loops, and secure RAG isolation boundaries, see the [interactive architecture and workflow diagrams](#architecture-and-workflow-diagrams).
+
 ## What You Will Run
 
 | Chapter section | Demonstration | What it shows |
@@ -260,21 +262,28 @@ Run the suite before changing a layer's order, block reason, schema, allow-list,
 │   └── storage/                       # Redis, ChromaDB, and audit-log integrations
 ├── streamlit_app.py                   # Local dashboard
 ├── workflow/
-│   └── workflow.md                    # Mermaid pipeline and gate diagrams
+│   ├── 01_end_to_end_request_lifecycle.html  # Interactive 12-layer pipeline lifecycle & fail-closed gate
+│   ├── 02_request_validation_layers.html     # Interactive pre-inference deterministic & identity checks
+│   ├── 03_post_llm_verification_gate.html    # Interactive post-LLM output schema & human gate hold
+│   ├── 04_gated_action_approvals.html        # Interactive cryptographic human-in-the-loop approval token flow
+│   ├── 05_threat_lockout_loop.html           # Interactive Layer 12 Redis ZSET rolling threat lockout loop
+│   ├── 06_secure_rag_isolation.html          # Interactive RAG write MIME & read role clearance isolation
+│   └── workflow.md                           # Comprehensive architectural specification and sequence notes
 └── tests/
 ```
 
-## Architecture Diagrams and Supporting Documents
+## Architecture and Workflow Diagrams
 
-The workflow document contains diagrams for:
+Interactive Archify workflow diagrams illustrate Sentinel AI's twelve-layer defense-in-depth pipeline, pre-inference validation gates, post-LLM verification, cryptographic human-in-the-loop approvals, rolling threat-monitor lockout loops, and secure RAG isolation boundaries. The companion specification and sequence diagrams are preserved in `workflow/` (`workflow.md`).
 
-- The complete twelve-layer request lifecycle.
-- The ordered pre-inference and post-inference control path.
-- Approval-token creation and consumption.
-- Threat-monitor lockout behavior.
-- Retrieval ingestion and context-isolation boundaries.
+- [01: End-to-End Request Lifecycle (12-Layer Pipeline)](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/01_end_to_end_request_lifecycle.html) — Visualizes the complete request path through pre-inference security checks, prompt hardening, model inference, post-LLM validation, human gating, and unconditional Layer 9 audit logging.
+- [02: Pre-Inference Request Validation Pipeline](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/02_request_validation_layers.html) — Details deterministic pre-checks including L1 regex validation, L2 semantic guard, L4 token restructuring, L5 daily budget ceilings, L10 agent scope enforcement, L6 content moderation, and L12 threat scoring.
+- [03: Post-LLM Output Verification and Human Gating](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/03_post_llm_verification_gate.html) — Traces JSON schema validation, automatic format-retry remediation, traceback leakage stripping, output toxicity scanning, and high-stakes action interception.
+- [04: Gated Action Approvals and Human Gate Workflow](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/04_gated_action_approvals.html) — Demonstrates the human-in-the-loop hold pattern where sensitive actions (data deletion, financial transfers, admin changes) generate a 1-hour cryptographic token in Redis for administrator review.
+- [05: Behavioral Threat Lockout Loop (Layer 12)](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/05_threat_lockout_loop.html) — Illustrates automated behavioral defense using Redis Sorted Sets (ZSETs) to track violations across rolling 5-minute windows and enforce temporary ingress lockouts.
+- [06: Secure RAG Ingestion and Context Isolation Boundaries](https://the-write-path-code.github.io/ch14-enterprise-ai-assistant/workflow/06_secure_rag_isolation.html) — Maps ingestion magic-byte MIME validation and content moderation (write boundary) alongside role-clearance filtering and XML delimiter encapsulation (read boundary) to neutralize indirect prompt injections.
 
-Start with the end-to-end request diagram. It shows the design rule that is easy to lose during refactoring: a blocked or pending request still reaches the audit logger, but it does not proceed to model execution or downstream action.
+Start with the end-to-end request diagram (`01_end_to_end_request_lifecycle.html`). It shows the design rule that is easy to lose during refactoring: a blocked or pending request still reaches the audit logger, but it does not proceed to model execution or downstream action.
 
 ## Safety and Operational Limits
 
