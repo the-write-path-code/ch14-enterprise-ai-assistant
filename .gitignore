@@ -42,3 +42,8 @@ data/
 .coverage
 htmlcov/
 .ruff_cache/
+
+# Archify artifacts
+.archify/
+workflow/*.json
+
